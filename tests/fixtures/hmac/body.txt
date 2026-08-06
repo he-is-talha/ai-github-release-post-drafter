@@ -1,0 +1,1 @@
+{"action":"published","release":{"id":42,"tag_name":"v1.2.0","name":"v1.2.0","body":"Adds HMAC verification.","draft":false,"prerelease":false}}
