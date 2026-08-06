@@ -1,0 +1,11 @@
+{
+  "releaseName": "v1.2.0 — Idempotency",
+  "tagName": "v1.2.0",
+  "body": "HMAC-verified webhooks, Redis delivery keys, and schema-locked LinkedIn/X drafts from release notes.",
+  "diffStats": {
+    "commits": 12,
+    "additions": 480,
+    "deletions": 40,
+    "filesChanged": 18
+  }
+}
