@@ -1,0 +1,31 @@
+# Ordered tiering rules — first match wins.
+# Omit a matcher field to leave it unconstrained.
+# Within a rule, all present matchers must match (AND).
+
+rules:
+  - id: ignore-draft-release
+    tier: ignore
+    draft: true
+
+  - id: ignore-chore-tag
+    tier: ignore
+    tagPrefix: "chore"
+
+  - id: ignore-v0-placeholder
+    tier: ignore
+    tagPrefix: "v0.0.0"
+
+  - id: changelog-prerelease
+    tier: changelog-only
+    prerelease: true
+
+  - id: post-worthy-published-notes
+    tier: post-worthy
+    draft: false
+    prerelease: false
+    requireBody: true
+    actions:
+      - published
+
+  - id: default-ignore
+    tier: ignore
