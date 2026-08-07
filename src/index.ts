@@ -1,5 +1,6 @@
 import { pathToFileURL } from "node:url";
 import { loadAppEnv } from "./config/env.js";
+import { createIdempotencyBackend } from "./idempotency/create.js";
 import { buildApp } from "./server/app.js";
 
 export const APP_NAME = "ai-github-release-post-drafter";
@@ -14,8 +15,13 @@ function isMainModule(): boolean {
 
 async function main(): Promise<void> {
   const env = loadAppEnv();
+  const idempotency = createIdempotencyBackend({
+    backend: env.idempotencyBackend,
+    redisUrl: env.redisUrl,
+  });
   const app = await buildApp({
     webhookSecret: env.githubWebhookSecret,
+    idempotency,
     logger: true,
   });
   await app.listen({ port: env.port, host: env.host });

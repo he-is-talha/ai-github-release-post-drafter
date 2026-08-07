@@ -2,10 +2,17 @@ import Fastify, {
   type FastifyInstance,
   type FastifyServerOptions,
 } from "fastify";
-import { hooksRoutes } from "./routes/hooks.js";
+import { createMemoryIdempotencyStore } from "../idempotency/memoryStore.js";
+import type { IdempotencyStore } from "../idempotency/types.js";
+import {
+  hooksRoutes,
+  type AcceptedDelivery,
+} from "./routes/hooks.js";
 
 export type BuildAppOptions = {
   webhookSecret: string;
+  idempotency?: IdempotencyStore;
+  onAccepted?: (info: AcceptedDelivery) => void | Promise<void>;
   logger?: FastifyServerOptions["logger"];
 };
 
@@ -38,6 +45,10 @@ export async function buildApp(
     },
   );
 
-  await app.register(hooksRoutes, { webhookSecret: opts.webhookSecret });
+  await app.register(hooksRoutes, {
+    webhookSecret: opts.webhookSecret,
+    idempotency: opts.idempotency ?? createMemoryIdempotencyStore(),
+    onAccepted: opts.onAccepted,
+  });
   return app;
 }

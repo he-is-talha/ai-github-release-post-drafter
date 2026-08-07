@@ -32,6 +32,7 @@ describe("POST /hooks/github", () => {
         "content-type": "application/json",
         "x-hub-signature-256": signature,
         "x-github-event": "release",
+        "x-github-delivery": "delivery-1",
       },
       payload: BODY,
     });
@@ -50,6 +51,7 @@ describe("POST /hooks/github", () => {
         "content-type": "application/json",
         "x-hub-signature-256": "sha256=" + "ab".repeat(32),
         "x-github-event": "release",
+        "x-github-delivery": "delivery-2",
       },
       payload: BODY,
     });
@@ -67,10 +69,33 @@ describe("POST /hooks/github", () => {
       headers: {
         "content-type": "application/json",
         "x-github-event": "release",
+        "x-github-delivery": "delivery-3",
       },
       payload: BODY,
     });
 
     expect(res.statusCode).toBe(401);
+  });
+
+  it("returns 400 when delivery id is missing", async () => {
+    app = await buildApp({ webhookSecret: SECRET });
+    const signature = signGitHubBody(BODY, SECRET);
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/hooks/github",
+      headers: {
+        "content-type": "application/json",
+        "x-hub-signature-256": signature,
+        "x-github-event": "release",
+      },
+      payload: BODY,
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({
+      ok: false,
+      error: "missing_delivery_id",
+    });
   });
 });
