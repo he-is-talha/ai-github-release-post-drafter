@@ -23,13 +23,13 @@ describe("POST /hooks/github idempotency", () => {
     }
   });
 
-  it("returns 200 duplicate on replay and does not call onAccepted again", async () => {
+  it("returns 200 duplicate on replay and does not enqueue again", async () => {
     const store = createMemoryIdempotencyStore();
-    const onAccepted = vi.fn();
+    const enqueue = vi.fn();
     app = await buildApp({
       webhookSecret: SECRET,
       idempotency: store,
-      onAccepted,
+      enqueue,
     });
 
     const signature = signGitHubBody(BODY, SECRET);
@@ -48,11 +48,7 @@ describe("POST /hooks/github idempotency", () => {
     });
     expect(first.statusCode).toBe(200);
     expect(first.json()).toEqual({ ok: true });
-    expect(onAccepted).toHaveBeenCalledTimes(1);
-    expect(onAccepted).toHaveBeenCalledWith({
-      deliveryId: DELIVERY_ID,
-      eventName: "release",
-    });
+    expect(enqueue).toHaveBeenCalledTimes(1);
 
     const second = await app.inject({
       method: "POST",
@@ -62,6 +58,6 @@ describe("POST /hooks/github idempotency", () => {
     });
     expect(second.statusCode).toBe(200);
     expect(second.json()).toEqual({ ok: true, duplicate: true });
-    expect(onAccepted).toHaveBeenCalledTimes(1);
+    expect(enqueue).toHaveBeenCalledTimes(1);
   });
 });

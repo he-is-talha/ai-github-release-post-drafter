@@ -1,22 +1,22 @@
 import type { FastifyPluginAsync } from "fastify";
 import { verifyGitHubSignature } from "../../github/hmac.js";
 import type { IdempotencyStore } from "../../idempotency/types.js";
-
-export type AcceptedDelivery = {
-  deliveryId: string;
-  eventName: string | undefined;
-};
+import type { WebhookJob } from "../../queue/types.js";
 
 export type HooksRouteOpts = {
   webhookSecret: string;
   idempotency: IdempotencyStore;
-  /** Called only after a successful claim (not on duplicates). */
-  onAccepted?: (info: AcceptedDelivery) => void | Promise<void>;
+  /**
+   * Fire-and-forget enqueue after a successful claim.
+   * Must not be awaited for slow work — ack returns immediately after this call returns.
+   */
+  enqueue?: (job: WebhookJob) => void;
 };
 
 declare module "fastify" {
   interface FastifyRequest {
     rawBody?: Buffer;
+    body?: unknown;
   }
 }
 
@@ -67,8 +67,12 @@ export const hooksRoutes: FastifyPluginAsync<HooksRouteOpts> = async (
       "github webhook accepted",
     );
 
-    if (opts.onAccepted) {
-      await opts.onAccepted({ deliveryId, eventName });
+    if (opts.enqueue) {
+      opts.enqueue({
+        deliveryId,
+        eventName,
+        payload: request.body,
+      });
     }
 
     return reply.code(200).send({ ok: true });

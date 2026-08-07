@@ -4,15 +4,13 @@ import Fastify, {
 } from "fastify";
 import { createMemoryIdempotencyStore } from "../idempotency/memoryStore.js";
 import type { IdempotencyStore } from "../idempotency/types.js";
-import {
-  hooksRoutes,
-  type AcceptedDelivery,
-} from "./routes/hooks.js";
+import type { WebhookJob } from "../queue/types.js";
+import { hooksRoutes } from "./routes/hooks.js";
 
 export type BuildAppOptions = {
   webhookSecret: string;
   idempotency?: IdempotencyStore;
-  onAccepted?: (info: AcceptedDelivery) => void | Promise<void>;
+  enqueue?: (job: WebhookJob) => void;
   logger?: FastifyServerOptions["logger"];
 };
 
@@ -48,7 +46,7 @@ export async function buildApp(
   await app.register(hooksRoutes, {
     webhookSecret: opts.webhookSecret,
     idempotency: opts.idempotency ?? createMemoryIdempotencyStore(),
-    onAccepted: opts.onAccepted,
+    enqueue: opts.enqueue,
   });
   return app;
 }

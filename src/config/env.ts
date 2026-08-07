@@ -12,6 +12,7 @@ export type AppEnv = LlmEnv & {
   host: string;
   idempotencyBackend: IdempotencyBackend;
   redisUrl?: string;
+  githubToken?: string;
 };
 
 /** String env map — avoids depending on the NodeJS namespace in callers/tests. */
@@ -54,6 +55,7 @@ export function loadAppEnv(env: EnvMap = process.env): AppEnv {
     throw new Error("REDIS_URL is required when IDEMPOTENCY_BACKEND=redis");
   }
 
+  const githubToken = env.GITHUB_TOKEN;
   return {
     ...loadLlmEnv(env),
     githubWebhookSecret: secret,
@@ -61,5 +63,9 @@ export function loadAppEnv(env: EnvMap = process.env): AppEnv {
     host: readEnv(env, "HOST", "0.0.0.0"),
     idempotencyBackend: backendRaw,
     redisUrl: redisUrl || undefined,
+    githubToken:
+      githubToken === undefined || githubToken === ""
+        ? undefined
+        : githubToken,
   };
 }

@@ -9,6 +9,7 @@ declare module "fastify" {
 
   export interface FastifyRequest {
     headers: Record<string, string | string[] | undefined>;
+    body?: unknown;
     log: {
       info: (obj: object | string, msg?: string) => void;
     };

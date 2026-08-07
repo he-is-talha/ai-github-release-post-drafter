@@ -1,0 +1,19 @@
+{
+  "action": "published",
+  "release": {
+    "id": 42001,
+    "tag_name": "v1.2.0",
+    "name": "v1.2.0 — Idempotency",
+    "body": "HMAC-verified webhooks, Redis delivery keys, and schema-locked LinkedIn/X drafts from release notes.\n\n### Changes\n- verify X-Hub-Signature-256\n- claim delivery ids before processing\n- local fixture replay without GitHub",
+    "draft": false,
+    "prerelease": false,
+    "html_url": "https://github.com/example/ai-github-release-post-drafter/releases/tag/v1.2.0"
+  },
+  "repository": {
+    "full_name": "example/ai-github-release-post-drafter",
+    "name": "ai-github-release-post-drafter",
+    "owner": {
+      "login": "example"
+    }
+  }
+}
