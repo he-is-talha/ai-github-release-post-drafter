@@ -1,5 +1,7 @@
 # ai-github-release-post-drafter
 
+[![Boring AI](https://img.shields.io/badge/Boring%20AI-Project%203%2F15-111111)](https://github.com/he-is-talha/ai-inbox-router)
+
 Turns a GitHub **release** webhook into a schema-locked LinkedIn + X draft markdown file (and optionally an approval PR). Nothing is auto-published.
 
 ![Release webhook: HMAC + claim + tiering, then schema-locked draft and approval PR](docs/demo.gif)
@@ -249,3 +251,10 @@ npm test -- tests/e2e/idempotency.replay.test.ts
 | Replay fixture | `npm run replay -- --fixture …` |
 | Demo | `npm run demo` / `./scripts/demo.sh` |
 | Pull model | `npm run pull-model` |
+
+## Series
+
+**Boring AI — Project 3/15**
+
+- Previous: [ai-inbox-router](https://github.com/he-is-talha/ai-inbox-router) (Project 2/15)
+- Next: [ai-notes-to-tasks-agent](https://github.com/he-is-talha/ai-notes-to-tasks-agent) (Project 4/15)
