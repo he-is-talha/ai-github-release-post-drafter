@@ -12,7 +12,9 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",
-    "replay": "tsx src/cli/replay.ts"
+    "replay": "tsx src/cli/replay.ts",
+    "demo": "./scripts/demo.sh",
+    "pull-model": "./scripts/pull-model.sh"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",

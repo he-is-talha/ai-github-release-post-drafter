@@ -1,6 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
 import { verifyGitHubSignature } from "../../github/hmac.js";
 import type { IdempotencyStore } from "../../idempotency/types.js";
+import {
+  incrementDuplicateDrop,
+  type Counters,
+} from "../../metrics/counters.js";
 import type { WebhookJob } from "../../queue/types.js";
 
 export type HooksRouteOpts = {
@@ -11,6 +15,7 @@ export type HooksRouteOpts = {
    * Must not be awaited for slow work — ack returns immediately after this call returns.
    */
   enqueue?: (job: WebhookJob) => void;
+  counters?: Counters;
 };
 
 declare module "fastify" {
@@ -55,6 +60,9 @@ export const hooksRoutes: FastifyPluginAsync<HooksRouteOpts> = async (
     const claim = await opts.idempotency.tryClaim(deliveryId);
 
     if (claim === "duplicate") {
+      if (opts.counters) {
+        incrementDuplicateDrop(opts.counters);
+      }
       request.log.info(
         { deliveryId, event: eventName },
         "github webhook duplicate delivery",

@@ -1,0 +1,10 @@
+node_modules
+dist
+.git
+.env
+drafts/*.md
+*.md
+!style-guide.md
+!README.md
+.plans
+.env.project-03-release-post-drafter-implementation-plan.md

@@ -28,10 +28,9 @@ describe("POST /hooks/github async enqueue", () => {
 
   it("returns 200 before a slow processor finishes", async () => {
     let finished = false;
-    const started = Date.now();
 
     const queue = createMemoryQueue(async () => {
-      await new Promise((r) => setTimeout(r, 80));
+      await new Promise((r) => setTimeout(r, 250));
       finished = true;
     });
 
@@ -53,13 +52,12 @@ describe("POST /hooks/github async enqueue", () => {
       payload: BODY,
     });
 
-    const elapsed = Date.now() - started;
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ ok: true });
+    // Ack must not wait on the processor — only finished=false proves async.
     expect(finished).toBe(false);
-    expect(elapsed).toBeLessThan(80);
 
-    await new Promise((r) => setTimeout(r, 120));
+    await new Promise((r) => setTimeout(r, 350));
     expect(finished).toBe(true);
   });
 

@@ -1,0 +1,50 @@
+# Default stack: Redis + app. Uses host Ollama (not started here).
+# Optional bundled Ollama: docker compose --profile with-ollama up -d
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  app:
+    build: .
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      IDEMPOTENCY_BACKEND: redis
+      REDIS_URL: redis://redis:6379
+      # Reach Ollama on the host machine (Linux needs host-gateway).
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma3:4b}
+      OPEN_PR: "false"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./drafts:/app/drafts
+      - ./fixtures:/app/fixtures:ro
+      - ./style-guide.md:/app/style-guide.md:ro
+      - ./tiering.yaml:/app/tiering.yaml:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # Not started by default — use local Ollama instead.
+  ollama:
+    profiles: ["with-ollama"]
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/var/lib/ollama
+
+volumes:
+  ollama_data:

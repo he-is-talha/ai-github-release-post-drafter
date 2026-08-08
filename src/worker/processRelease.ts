@@ -3,6 +3,12 @@ import type { OpenPrResult } from "../github/openDraftPr.js";
 import { enrichRelease } from "../github/enrich.js";
 import { getReleaseFromPayload } from "../github/extractRelease.js";
 import type { EnrichedRelease, GitHubClient } from "../github/types.js";
+import {
+  incrementDraftFailure,
+  incrementDraftSuccess,
+  incrementTier,
+  type Counters,
+} from "../metrics/counters.js";
 import type { WebhookJob } from "../queue/types.js";
 import { classifyEvent } from "../tiering/classify.js";
 import type { TieringRule } from "../tiering/types.js";
@@ -37,6 +43,7 @@ export type ProcessDeps = {
    * Optional PR opener. When omitted or returns null, drafts stay local only.
    */
   openPr?: (ctx: OpenPrContext) => Promise<OpenPrResult | null>;
+  counters?: Counters;
   log?: (fields: Record<string, unknown>) => void;
 };
 
@@ -73,6 +80,9 @@ export async function processReleaseJob(
   }
 
   const { tier, ruleId } = classifyEvent(releaseLike, deps.rules);
+  if (deps.counters) {
+    incrementTier(deps.counters, tier);
+  }
   log({
     deliveryId: job.deliveryId,
     releaseId: releaseLike.release.id,
@@ -141,6 +151,10 @@ export async function processReleaseJob(
       });
     }
 
+    if (deps.counters) {
+      incrementDraftSuccess(deps.counters);
+    }
+
     return {
       status: "drafted",
       tier: "post-worthy",
@@ -151,6 +165,9 @@ export async function processReleaseJob(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    if (deps.counters) {
+      incrementDraftFailure(deps.counters);
+    }
     log({
       deliveryId: job.deliveryId,
       releaseId: releaseLike.release.id,
