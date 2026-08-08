@@ -1,0 +1,19 @@
+{
+  "action": "published",
+  "release": {
+    "id": 42003,
+    "tag_name": "v1.0.3",
+    "name": "v1.0.3",
+    "body": "Follow-up to v1.0.2: polish the release → draft path and ship the end-to-end demo.\n\n### Changes\n- Demo walkthrough: GitHub webhook → HMAC → claim → tier → LLM → draft → approval PR\n- Idempotent delivery handling on retries\n- Schema-locked LinkedIn/X drafts (never auto-publish)\n\n### Previous\n- v1.0.2 — prior release",
+    "draft": false,
+    "prerelease": false,
+    "html_url": "https://github.com/he-is-talha/ai-github-release-post-drafter/releases/tag/v1.0.3"
+  },
+  "repository": {
+    "full_name": "he-is-talha/ai-github-release-post-drafter",
+    "name": "ai-github-release-post-drafter",
+    "owner": {
+      "login": "he-is-talha"
+    }
+  }
+}

@@ -5,7 +5,21 @@ import type { DraftPrClient } from "./openDraftPr.js";
  * Octokit-backed DraftPrClient for real PR opens (behind OPEN_PR + GITHUB_TOKEN).
  */
 export function createDraftPrClient(token: string): DraftPrClient {
-  const octokit = new Octokit({ auth: token });
+  const octokit = new Octokit({
+    auth: token,
+    log: {
+      debug: () => undefined,
+      info: () => undefined,
+      warn: (message: string) => {
+        console.warn(message);
+      },
+      error: (message: string) => {
+        // Expected 404 while probing file existence — don't spam the console/GIF.
+        if (/^(GET|POST|PATCH|PUT|DELETE) \//.test(message)) return;
+        console.error(message);
+      },
+    },
+  });
 
   return {
     async getDefaultBranch(owner, repo) {

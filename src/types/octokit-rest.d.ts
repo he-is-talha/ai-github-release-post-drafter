@@ -4,6 +4,12 @@
 declare module "@octokit/rest" {
   export type OctokitOptions = {
     auth?: string;
+    log?: {
+      debug: (message: string) => unknown;
+      info: (message: string) => unknown;
+      warn: (message: string) => unknown;
+      error: (message: string) => unknown;
+    };
   };
 
   export class Octokit {
