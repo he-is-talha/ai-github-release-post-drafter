@@ -15,9 +15,15 @@ export type DraftAndWriteInput = {
   diffStats: DiffStats;
 };
 
+export type DraftAndWriteResult = {
+  paths?: string[];
+};
+
 export type ProcessDeps = {
   rules: TieringRule[];
-  draftAndWrite: (input: DraftAndWriteInput) => Promise<void>;
+  draftAndWrite: (
+    input: DraftAndWriteInput,
+  ) => Promise<DraftAndWriteResult | void>;
   github?: GitHubClient;
   log?: (fields: Record<string, unknown>) => void;
 };
@@ -33,6 +39,7 @@ export type ProcessResult =
       tier: "post-worthy";
       ruleId: string;
       enriched: EnrichedRelease;
+      paths?: string[];
     }
   | { status: "ignored_event"; reason: string }
   | { status: "error"; message: string };
@@ -83,7 +90,7 @@ export async function processReleaseJob(
           diffStats: null,
         };
 
-    await deps.draftAndWrite({
+    const writeResult = await deps.draftAndWrite({
       deliveryId: job.deliveryId,
       eventName: job.eventName,
       tier: "post-worthy",
@@ -97,6 +104,7 @@ export async function processReleaseJob(
       tier: "post-worthy",
       ruleId,
       enriched,
+      paths: writeResult?.paths,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

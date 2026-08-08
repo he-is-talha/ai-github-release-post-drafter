@@ -1,8 +1,11 @@
+import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { loadAppEnv } from "./config/env.js";
+import { loadAppEnv, loadLlmEnv } from "./config/env.js";
+import { createDraftAndWrite } from "./drafts/generateAndWrite.js";
 import { createFixtureGitHubClient } from "./github/enrich.js";
 import { createGitHubClient } from "./github/octokitClient.js";
 import { createIdempotencyBackend } from "./idempotency/create.js";
+import { createLlmProvider } from "./llm/provider.js";
 import { createMemoryQueue } from "./queue/memoryQueue.js";
 import { buildApp } from "./server/app.js";
 import { loadTieringRules } from "./tiering/load.js";
@@ -25,6 +28,11 @@ async function main(): Promise<void> {
     redisUrl: env.redisUrl,
   });
   const rules = loadTieringRules();
+  const llm = createLlmProvider(loadLlmEnv());
+  const draftAndWrite = createDraftAndWrite({
+    llm,
+    draftsDir: join(process.cwd(), "drafts"),
+  });
 
   const queue = createMemoryQueue(async (job) => {
     const github = env.githubToken
@@ -34,17 +42,7 @@ async function main(): Promise<void> {
     await processReleaseJob(job, {
       rules,
       github,
-      draftAndWrite: async (input) => {
-        console.log(
-          JSON.stringify({
-            msg: "draft stub (chunk 12 will write files)",
-            deliveryId: input.deliveryId,
-            tier: input.tier,
-            ruleId: input.ruleId,
-            tag: input.enriched.tagName,
-          }),
-        );
-      },
+      draftAndWrite,
       log: (fields) => console.log(JSON.stringify(fields)),
     });
   });

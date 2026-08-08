@@ -1,16 +1,22 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { loadLlmEnv } from "../config/env.js";
+import { createDraftAndWrite } from "../drafts/generateAndWrite.js";
 import { createFixtureGitHubClient } from "../github/enrich.js";
 import { createMemoryIdempotencyStore } from "../idempotency/memoryStore.js";
+import { createLlmProvider } from "../llm/provider.js";
+import type { LlmProvider } from "../llm/provider.js";
 import { loadTieringRules } from "../tiering/load.js";
-import {
-  processReleaseJob,
-  type DraftAndWriteInput,
-} from "../worker/processRelease.js";
+import { processReleaseJob } from "../worker/processRelease.js";
 
-function parseArgs(argv: string[]): { fixture: string; deliveryId: string } {
+function parseArgs(argv: string[]): {
+  fixture: string;
+  deliveryId: string;
+  draftsDir: string;
+} {
   let fixture = "";
   let deliveryId = `replay-${Date.now()}`;
+  let draftsDir = join(process.cwd(), "drafts");
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -18,61 +24,81 @@ function parseArgs(argv: string[]): { fixture: string; deliveryId: string } {
       fixture = argv[++i] ?? "";
     } else if (arg === "--delivery-id") {
       deliveryId = argv[++i] ?? deliveryId;
+    } else if (arg === "--drafts-dir") {
+      draftsDir = resolve(process.cwd(), argv[++i] ?? draftsDir);
     }
   }
 
   if (!fixture) {
     throw new Error(
-      "Usage: npm run replay -- --fixture <path> [--delivery-id <id>]",
+      "Usage: npm run replay -- --fixture <path> [--delivery-id <id>] [--drafts-dir <dir>]",
     );
   }
 
-  return { fixture: resolve(process.cwd(), fixture), deliveryId };
+  return {
+    fixture: resolve(process.cwd(), fixture),
+    deliveryId,
+    draftsDir,
+  };
 }
 
-export async function runReplay(argv: string[] = process.argv.slice(2)) {
-  const { fixture, deliveryId } = parseArgs(argv);
-  const payload = JSON.parse(readFileSync(fixture, "utf-8")) as unknown;
+export type RunReplayOptions = {
+  llm?: LlmProvider;
+  draftsDir?: string;
+};
+
+export async function runReplay(
+  argv: string[] = process.argv.slice(2),
+  options: RunReplayOptions = {},
+) {
+  const parsed = parseArgs(argv);
+  const draftsDir = options.draftsDir ?? parsed.draftsDir;
+  const payload = JSON.parse(readFileSync(parsed.fixture, "utf-8")) as unknown;
   const rules = loadTieringRules();
   const store = createMemoryIdempotencyStore();
-  const claim = await store.tryClaim(deliveryId);
+  const claim = await store.tryClaim(parsed.deliveryId);
   if (claim === "duplicate") {
     console.log(
-      JSON.stringify({ ok: true, duplicate: true, deliveryId }),
+      JSON.stringify({
+        ok: true,
+        duplicate: true,
+        deliveryId: parsed.deliveryId,
+      }),
     );
     return { duplicate: true as const };
   }
 
-  const drafted: DraftAndWriteInput[] = [];
+  const llm = options.llm ?? createLlmProvider(loadLlmEnv());
+  const draftAndWrite = createDraftAndWrite({ llm, draftsDir });
+
   const result = await processReleaseJob(
     {
-      deliveryId,
+      deliveryId: parsed.deliveryId,
       eventName: "release",
       payload,
     },
     {
       rules,
       github: createFixtureGitHubClient(payload),
-      draftAndWrite: async (input) => {
-        drafted.push(input);
-        console.log(
-          JSON.stringify({
-            msg: "draft stub",
-            tier: input.tier,
-            ruleId: input.ruleId,
-            tag: input.enriched.tagName,
-            diffStats: input.diffStats,
-          }),
-        );
-      },
+      draftAndWrite,
       log: (fields) => {
         console.log(JSON.stringify({ msg: "process", ...fields }));
       },
     },
   );
 
-  console.log(JSON.stringify({ ok: true, result, drafts: drafted.length }));
-  return { duplicate: false as const, result, drafts: drafted };
+  console.log(
+    JSON.stringify({
+      ok: true,
+      result,
+      paths: result.status === "drafted" ? result.paths : [],
+    }),
+  );
+  return {
+    duplicate: false as const,
+    result,
+    paths: result.status === "drafted" ? (result.paths ?? []) : [],
+  };
 }
 
 const isMain =
