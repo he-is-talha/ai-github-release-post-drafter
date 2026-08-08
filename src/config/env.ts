@@ -13,6 +13,10 @@ export type AppEnv = LlmEnv & {
   idempotencyBackend: IdempotencyBackend;
   redisUrl?: string;
   githubToken?: string;
+  /** When true and token present, open a draft PR after writing the file. */
+  openPr: boolean;
+  /** owner/name — used when opening a PR if payload repo is unavailable. */
+  githubRepo?: string;
 };
 
 /** String env map — avoids depending on the NodeJS namespace in callers/tests. */
@@ -24,6 +28,12 @@ function readEnv(env: EnvMap, name: string, fallback: string): string {
     return fallback;
   }
   return value;
+}
+
+function readBool(env: EnvMap, name: string, fallback: boolean): boolean {
+  const value = env[name];
+  if (value === undefined || value === "") return fallback;
+  return ["1", "true", "yes", "on"].includes(value.toLowerCase());
 }
 
 export function loadLlmEnv(env: EnvMap = process.env): LlmEnv {
@@ -56,6 +66,7 @@ export function loadAppEnv(env: EnvMap = process.env): AppEnv {
   }
 
   const githubToken = env.GITHUB_TOKEN;
+  const githubRepo = env.GITHUB_REPO;
   return {
     ...loadLlmEnv(env),
     githubWebhookSecret: secret,
@@ -67,5 +78,8 @@ export function loadAppEnv(env: EnvMap = process.env): AppEnv {
       githubToken === undefined || githubToken === ""
         ? undefined
         : githubToken,
+    openPr: readBool(env, "OPEN_PR", false),
+    githubRepo:
+      githubRepo === undefined || githubRepo === "" ? undefined : githubRepo,
   };
 }

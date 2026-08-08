@@ -10,6 +10,9 @@ declare module "@octokit/rest" {
     constructor(options?: OctokitOptions);
     rest: {
       repos: {
+        get: (params: { owner: string; repo: string }) => Promise<{
+          data: { default_branch: string };
+        }>;
         getRelease: (params: {
           owner: string;
           repo: string;
@@ -39,6 +42,46 @@ declare module "@octokit/rest" {
             }>;
           };
         }>;
+        getContent: (params: {
+          owner: string;
+          repo: string;
+          path: string;
+          ref?: string;
+        }) => Promise<{
+          data: { sha: string } | Array<unknown>;
+        }>;
+        createOrUpdateFileContents: (params: {
+          owner: string;
+          repo: string;
+          path: string;
+          message: string;
+          content: string;
+          branch?: string;
+          sha?: string;
+        }) => Promise<unknown>;
+      };
+      git: {
+        getRef: (params: {
+          owner: string;
+          repo: string;
+          ref: string;
+        }) => Promise<{ data: { object: { sha: string } } }>;
+        createRef: (params: {
+          owner: string;
+          repo: string;
+          ref: string;
+          sha: string;
+        }) => Promise<unknown>;
+      };
+      pulls: {
+        create: (params: {
+          owner: string;
+          repo: string;
+          title: string;
+          head: string;
+          base: string;
+          body?: string;
+        }) => Promise<{ data: { number: number; html_url: string } }>;
       };
     };
   }

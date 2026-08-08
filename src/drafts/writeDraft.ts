@@ -11,6 +11,7 @@ export type WriteDraftMeta = Omit<DraftFrontMatter, "platforms" | "createdAt"> &
 export type WriteDraftResult = {
   paths: string[];
   filename: string;
+  markdown: string;
 };
 
 function formatPlatformSection(
@@ -69,5 +70,5 @@ export async function writeDraftFiles(
   const path = join(dir, filename);
   const markdown = buildDraftMarkdown(meta, drafts);
   await writeFile(path, markdown, "utf8");
-  return { paths: [path], filename };
+  return { paths: [path], filename, markdown };
 }

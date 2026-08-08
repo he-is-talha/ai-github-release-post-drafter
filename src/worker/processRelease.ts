@@ -1,4 +1,5 @@
 import type { DiffStats } from "../drafting/types.js";
+import type { OpenPrResult } from "../github/openDraftPr.js";
 import { enrichRelease } from "../github/enrich.js";
 import { getReleaseFromPayload } from "../github/extractRelease.js";
 import type { EnrichedRelease, GitHubClient } from "../github/types.js";
@@ -17,6 +18,13 @@ export type DraftAndWriteInput = {
 
 export type DraftAndWriteResult = {
   paths?: string[];
+  filename?: string;
+  markdown?: string;
+};
+
+export type OpenPrContext = {
+  input: DraftAndWriteInput;
+  write: DraftAndWriteResult;
 };
 
 export type ProcessDeps = {
@@ -25,6 +33,10 @@ export type ProcessDeps = {
     input: DraftAndWriteInput,
   ) => Promise<DraftAndWriteResult | void>;
   github?: GitHubClient;
+  /**
+   * Optional PR opener. When omitted or returns null, drafts stay local only.
+   */
+  openPr?: (ctx: OpenPrContext) => Promise<OpenPrResult | null>;
   log?: (fields: Record<string, unknown>) => void;
 };
 
@@ -40,6 +52,7 @@ export type ProcessResult =
       ruleId: string;
       enriched: EnrichedRelease;
       paths?: string[];
+      pr?: OpenPrResult;
     }
   | { status: "ignored_event"; reason: string }
   | { status: "error"; message: string };
@@ -90,21 +103,51 @@ export async function processReleaseJob(
           diffStats: null,
         };
 
-    const writeResult = await deps.draftAndWrite({
+    const draftInput: DraftAndWriteInput = {
       deliveryId: job.deliveryId,
       eventName: job.eventName,
       tier: "post-worthy",
       ruleId,
       enriched,
       diffStats: enriched.diffStats,
-    });
+    };
+
+    const writeResult = (await deps.draftAndWrite(draftInput)) ?? {};
+
+    let pr: OpenPrResult | undefined;
+    if (deps.openPr) {
+      const opened = await deps.openPr({
+        input: draftInput,
+        write: writeResult,
+      });
+      if (opened) {
+        pr = opened;
+        log({
+          deliveryId: job.deliveryId,
+          msg: "draft PR opened",
+          prNumber: opened.prNumber,
+          url: opened.url,
+        });
+      } else {
+        log({
+          deliveryId: job.deliveryId,
+          msg: "draft written locally; PR skipped",
+        });
+      }
+    } else {
+      log({
+        deliveryId: job.deliveryId,
+        msg: "draft written locally; PR skipped",
+      });
+    }
 
     return {
       status: "drafted",
       tier: "post-worthy",
       ruleId,
       enriched,
-      paths: writeResult?.paths,
+      paths: writeResult.paths,
+      pr,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

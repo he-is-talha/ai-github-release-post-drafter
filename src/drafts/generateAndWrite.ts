@@ -8,6 +8,7 @@ import { writeDraftFiles } from "./writeDraft.js";
 export type GenerateAndWriteResult = {
   paths: string[];
   filename: string;
+  markdown: string;
   drafts: { linkedin: Draft; x: Draft };
 };
 
@@ -68,6 +69,7 @@ export function createDraftAndWrite(
     return {
       paths: written.paths,
       filename: written.filename,
+      markdown: written.markdown,
       drafts: { linkedin, x },
     };
   };
