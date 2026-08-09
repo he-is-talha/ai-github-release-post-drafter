@@ -6,7 +6,7 @@ Turns a GitHub **release** webhook into a schema-locked LinkedIn + X draft markd
 
 ![Release webhook: HMAC + claim + tiering, then schema-locked draft and approval PR](docs/demo.gif)
 
-> GIF callouts: `>>> KEY: github webhook` (`v1.0.3`) → HMAC → claim → `tier=post-worthy` → schema-locked draft → `PR #N opened` → duplicate drop.
+> Demo: `docs/demo.gif` / `docs/demo.mp4` — hook → webhook + HMAC + claim → post-worthy tier → schema-locked draft → approval PR → duplicate drop.
 
 ## What it does
 
